@@ -46,7 +46,11 @@ export function AudioContextStep() {
 
                 recognition.onerror = (event: any) => {
                     console.error('Speech recognition error', event.error);
-                    setError('Microphone access denied or not supported.');
+                    if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                        setError('Acceso al micrófono denegado. Asegurate de usar HTTPS o escribí la descripción.');
+                    } else {
+                        setError('Error en el reconocimiento de voz. Por favor escribí la descripción.');
+                    }
                     setIsRecording(false);
                 };
 
@@ -101,7 +105,6 @@ export function AudioContextStep() {
                             ? 'bg-red-500 hover:bg-red-600 shadow-lg'
                             : 'bg-blue-600 hover:bg-blue-700 shadow-md'
                             }`}
-                        disabled={!!error}
                     >
                         <Mic className={`w-8 h-8 ${isRecording ? 'text-white animate-pulse' : 'text-white'}`} />
                     </button>

@@ -9,7 +9,7 @@ export async function analyzeWithGemini(imageUrls: string[], contextText?: strin
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Fetch images and convert to base64 (Gemini needs base64 or file URI, but for simplicity we'll fetch and convert)
     // Note: This might be slow for large images. 
@@ -22,7 +22,17 @@ export async function analyzeWithGemini(imageUrls: string[], contextText?: strin
         if (url.startsWith('/uploads/')) {
             const fs = await import('fs/promises');
             const path = await import('path');
-            const filePath = path.join(process.cwd(), 'public', url);
+            
+            // Extract filename from URL
+            const filename = url.split('/').pop();
+            if (!filename) throw new Error('Invalid file URL');
+
+            // Use UPLOAD_DIR env var or default to public/uploads
+            const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'public/uploads');
+            console.log('AI Server using uploadDir:', uploadDir); // DEBUG
+            const filePath = path.join(uploadDir, filename);
+            
+            console.log('Reading file from:', filePath); // DEBUG
             const buffer = await fs.readFile(filePath);
             return {
                 inlineData: {
