@@ -18,7 +18,10 @@ export const getGoogleAuth = () => {
     }
 
     // Normalize: Replace literal \n with real newlines (common in JSON or env vars)
-    privateKey = privateKey.replace(/\\n/g, '\n');
+    // Only do this if it's NOT a real newline already
+    if (privateKey.includes('\\n')) {
+        privateKey = privateKey.replace(/\\n/g, '\n');
+    }
 
     // Aggressive fix: Reconstruct the key if it looks malformed (e.g. spaces instead of newlines)
     // This handles cases where the key was flattened or stripped of newlines
