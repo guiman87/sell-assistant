@@ -9,8 +9,8 @@ export async function analyzeWithGemini(imageUrls: string[], contextText?: strin
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Reverting to standard model name, check logs for available models
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Using gemini-2.0-flash as it is available in the user's model list
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Fetch images and convert to base64 (Gemini needs base64 or file URI, but for simplicity we'll fetch and convert)
     // Note: This might be slow for large images. 
