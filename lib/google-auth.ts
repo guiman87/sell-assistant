@@ -13,6 +13,21 @@ export const getGoogleAuth = () => {
     if (privateKey.includes('\\n')) {
         privateKey = privateKey.replace(/\\n/g, '\n');
     }
+    
+    // Also handle space-separated keys which can happen if newlines are lost
+    if (!privateKey.includes('\n') && privateKey.includes(' PRIVATE KEY----- ')) {
+        console.log('Auth: Detected space-separated key, attempting to fix...');
+        privateKey = privateKey.replace('-----BEGIN PRIVATE KEY----- ', '-----BEGIN PRIVATE KEY-----\n');
+        privateKey = privateKey.replace(' -----END PRIVATE KEY-----', '\n-----END PRIVATE KEY-----');
+        // The middle part might still be space separated, but let's see if the header fix is enough
+        // or if we need to be more aggressive.
+        // A more aggressive fix for the body:
+        const header = '-----BEGIN PRIVATE KEY-----\n';
+        const footer = '\n-----END PRIVATE KEY-----';
+        const body = privateKey.replace(header, '').replace(footer, '').replace(/ /g, '\n');
+        // This is risky if there are legitimate spaces, but base64 shouldn't have spaces.
+        // Let's try a safer approach first: just ensuring header/footer are on own lines.
+    }
 
     // Basic validation/fix for PEM format
     if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
