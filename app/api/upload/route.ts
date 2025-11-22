@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { existsSync } from 'fs';
 
 export async function POST(req: NextRequest) {
     try {
@@ -14,12 +15,20 @@ export async function POST(req: NextRequest) {
 
         const buffer = Buffer.from(await file.arrayBuffer());
         const filename = `${uuidv4()}-${file.name.replace(/\s/g, '_')}`;
-        const uploadDir = path.join(process.cwd(), 'public/uploads');
+        
+        // Use UPLOAD_DIR env var or default to public/uploads
+        const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'public/uploads');
+        
+        // Ensure directory exists
+        if (!existsSync(uploadDir)) {
+            await mkdir(uploadDir, { recursive: true });
+        }
+
         const filepath = path.join(uploadDir, filename);
 
         await writeFile(filepath, buffer);
 
-        // Return the URL relative to the public folder
+        // Return the URL relative to the uploads route
         const url = `/uploads/${filename}`;
 
         return NextResponse.json({ url });
