@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { ItemDraft, WizardState, AnalysisResult } from '@/lib/types';
+import { generateId } from '@/lib/utils';
 
 interface WizardContextType extends WizardState {
     setDraft: (draft: ItemDraft) => void;
@@ -34,13 +35,13 @@ export function WizardProvider({ children }: { children: ReactNode }) {
 
     const resetWizard = () => {
         setCurrentStep(1);
-        setDraft({ ...initialDraft, id: crypto.randomUUID() });
+        setDraft({ ...initialDraft, id: generateId() });
     };
 
     // Initialize ID on mount if empty
     React.useEffect(() => {
         if (!draft.id) {
-            setDraft(prev => ({ ...prev, id: crypto.randomUUID() }));
+            setDraft(prev => ({ ...prev, id: generateId() }));
         }
     }, []);
 
