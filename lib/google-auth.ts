@@ -1,12 +1,20 @@
 import { google } from 'googleapis';
 
 export const getGoogleAuth = () => {
-    const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
+    let GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
     let privateKey = process.env.GOOGLE_PRIVATE_KEY;
 
     if (!GOOGLE_CLIENT_EMAIL || !privateKey) {
         console.error('Missing credentials. Email:', !!GOOGLE_CLIENT_EMAIL, 'Key:', !!privateKey);
         throw new Error('Missing Google Service Account credentials');
+    }
+
+    // Remove surrounding quotes if present (common artifact from env files or misconfiguration)
+    if (GOOGLE_CLIENT_EMAIL.startsWith('"') && GOOGLE_CLIENT_EMAIL.endsWith('"')) {
+        GOOGLE_CLIENT_EMAIL = GOOGLE_CLIENT_EMAIL.slice(1, -1);
+    }
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+        privateKey = privateKey.slice(1, -1);
     }
 
     // Normalize: Replace literal \n with real newlines (common in JSON or env vars)
