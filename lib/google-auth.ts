@@ -9,24 +9,29 @@ export const getGoogleAuth = () => {
         throw new Error('Missing Google Service Account credentials');
     }
 
-    // If the key contains literal \n characters (common in JSON or env vars), replace them
-    if (privateKey.includes('\\n')) {
-        privateKey = privateKey.replace(/\\n/g, '\n');
-    }
-    
-    // Also handle space-separated keys which can happen if newlines are lost
-    if (!privateKey.includes('\n') && privateKey.includes(' PRIVATE KEY----- ')) {
-        console.log('Auth: Detected space-separated key, attempting to fix...');
-        privateKey = privateKey.replace('-----BEGIN PRIVATE KEY----- ', '-----BEGIN PRIVATE KEY-----\n');
-        privateKey = privateKey.replace(' -----END PRIVATE KEY-----', '\n-----END PRIVATE KEY-----');
-        // The middle part might still be space separated, but let's see if the header fix is enough
-        // or if we need to be more aggressive.
-        // A more aggressive fix for the body:
-        const header = '-----BEGIN PRIVATE KEY-----\n';
-        const footer = '\n-----END PRIVATE KEY-----';
-        const body = privateKey.replace(header, '').replace(footer, '').replace(/ /g, '\n');
-        // This is risky if there are legitimate spaces, but base64 shouldn't have spaces.
-        // Let's try a safer approach first: just ensuring header/footer are on own lines.
+    // Normalize: Replace literal \n with real newlines (common in JSON or env vars)
+    privateKey = privateKey.replace(/\\n/g, '\n');
+
+    // Aggressive fix: Reconstruct the key if it looks malformed (e.g. spaces instead of newlines)
+    // This handles cases where the key was flattened or stripped of newlines
+    if (privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        const header = '-----BEGIN PRIVATE KEY-----';
+        const footer = '-----END PRIVATE KEY-----';
+        
+        // Check if we are missing the critical newlines around the body
+        if (!privateKey.includes(`${header}\n`) || !privateKey.includes(`\n${footer}`)) {
+             console.log('Auth: Malformed key detected (missing newlines), reconstructing...');
+             
+             // Extract body: remove header, footer, and ALL whitespace (spaces, tabs, newlines)
+             // Base64 should not have spaces, so this is safe.
+             const body = privateKey
+                .replace(header, '')
+                .replace(footer, '')
+                .replace(/\s/g, '');
+             
+             // Reassemble with correct newlines
+             privateKey = `${header}\n${body}\n${footer}`;
+        }
     }
 
     // Basic validation/fix for PEM format
@@ -34,10 +39,10 @@ export const getGoogleAuth = () => {
         console.error('Invalid Private Key format: Missing header');
     }
 
-    // Debug logging (safe)
+    // Debug logging (safe) - Use JSON.stringify to show hidden characters like \n
     console.log('Auth: Email:', GOOGLE_CLIENT_EMAIL);
     console.log('Auth: Key length:', privateKey.length);
-    console.log('Auth: Key start:', privateKey.substring(0, 35).replace(/\n/g, ' '));
+    console.log('Auth: Key start (first 40 chars):', JSON.stringify(privateKey.substring(0, 40)));
 
     return new google.auth.GoogleAuth({
         credentials: {
