@@ -17,6 +17,53 @@ export async function appendToSheet(item: ItemDraft) {
 
     const { analysis, images, audioText } = item;
 
+    // Check if the sheet is empty (or just check A1) to add headers
+    try {
+        const checkHeaders = await sheets.spreadsheets.values.get({
+            spreadsheetId: SPREADSHEET_ID,
+            range: 'Sheet1!A1',
+        });
+
+        if (!checkHeaders.data.values || checkHeaders.data.values.length === 0) {
+            // Add headers
+            await sheets.spreadsheets.values.update({
+                spreadsheetId: SPREADSHEET_ID,
+                range: 'Sheet1!A1:I1',
+                valueInputOption: 'USER_ENTERED',
+                requestBody: {
+                    values: [[
+                        'Date',
+                        'Title',
+                        'Description',
+                        'Price',
+                        'Currency',
+                        'Category',
+                        'Condition',
+                        'Images',
+                        'Audio Notes'
+                    ]],
+                },
+            });
+        }
+    } catch (e) {
+        console.warn('Could not check/add headers:', e);
+        // Continue anyway to append the row
+    }
+
+    // Construct full image URLs
+    // In Home Assistant Add-on, we don't easily know the external URL.
+    // We can try to use a configured BASE_URL or fall back to relative.
+    // Ideally, the user should configure their external URL in the add-on options.
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || ''; 
+    
+    const fullImageUrls = images.map(img => {
+        if (img.startsWith('http')) return img;
+        // Remove leading slash if base url has trailing slash to avoid double slashes
+        const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+        const cleanImg = img.startsWith('/') ? img : `/${img}`;
+        return `${cleanBase}${cleanImg}`;
+    });
+
     const values = [
         [
             new Date().toISOString(),
@@ -26,7 +73,7 @@ export async function appendToSheet(item: ItemDraft) {
             analysis?.currency || '',
             analysis?.category || '',
             analysis?.condition || '',
-            images.join(', '),
+            fullImageUrls.join(', '),
             audioText || '',
         ]
     ];
